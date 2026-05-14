@@ -1,103 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quotex 30s Predictor</title>
-<style>
-  body {
-    margin: 0;
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    color: white;
-    font-family: 'Segoe UI', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    text-align: center;
-  }
-  h1 { font-size: 2.5rem; margin-bottom: 0.2em; }
-  button {
-    background: #00e676;
-    border: none;
-    padding: 1.5em 3em;
-    font-size: 1.5rem;
-    font-weight: bold;
-    border-radius: 50px;
-    cursor: pointer;
-    margin: 1em 0;
-    box-shadow: 0 0 30px #00e67688;
-    transition: 0.3s;
-  }
-  button:hover { box-shadow: 0 0 50px #00e676; }
-  #result {
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(15px);
-    border-radius: 25px;
-    padding: 2em;
-    margin: 1em;
-    min-width: 300px;
-    display: none;
-  }
-  #action { font-size: 4rem; font-weight: 900; letter-spacing: 5px; margin: 0.2em 0; }
-  #confidence { font-size: 1.5rem; opacity: 0.9; }
-  .note { opacity: 0.6; font-size: 0.9rem; margin-top: 2em; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Trader Agent | Quotex</title>
+    <style>
+        body { margin:0; background:#0d1117; color:#c9d1d9; font-family:Segoe UI,sans-serif; }
+        .container { max-width:700px; margin:auto; padding:20px; }
+        .header { text-align:center; margin-bottom:20px; }
+        .header h1 { color:#58a6ff; }
+        .signal-box { background:#161b22; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px; }
+        #action { font-size:3rem; font-weight:bold; margin:10px 0; }
+        .controls { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
+        button { padding:10px 25px; border:none; border-radius:8px; font-size:1rem; cursor:pointer; }
+        .btn-start { background:#238636; color:white; }
+        .btn-stop { background:#da3633; color:white; }
+        .btn-refresh { background:#30363d; color:#c9d1d9; }
+        .stats { display:flex; justify-content:space-around; background:#161b22; border-radius:10px; padding:15px; margin-bottom:20px; }
+        .trade-list { background:#161b22; border-radius:10px; padding:10px; max-height:300px; overflow-y:auto; }
+        .trade-item { display:flex; justify-content:space-between; border-bottom:1px solid #30363d; padding:5px 0; }
+        .win { color:#3fb950; } .loss { color:#f85149; }
+    </style>
 </head>
 <body>
-  <h1>⚡ Quotex 30s Predictor</h1>
-  <p>SuperLogic v2 (94% backtest accuracy)</p>
-  <button onclick="getSignal()">🔮 Get Signal</button>
-  <div id="result">
-    <div id="action"></div>
-    <div id="confidence"></div>
-  </div>
-  <p class="note">⚠️ Simulation only – no real money.</p>
+<div class="container">
+    <div class="header">
+        <h1>🤖 Master Trader Agent</h1>
+        <p>SuperLogic v3 · 95% Backtest · Sandbox Simulation</p>
+    </div>
+    <div class="signal-box">
+        <div>বর্তমান সংকেত</div>
+        <div id="action" style="color:gray">⏳</div>
+        <div id="confidence" style="opacity:0.8"></div>
+    </div>
+    <div class="controls">
+        <button class="btn-start" onclick="startAuto()">▶ Start Auto</button>
+        <button class="btn-stop" onclick="stopAuto()">⏹ Stop</button>
+        <button class="btn-refresh" onclick="refreshSignal()">🔄 Refresh</button>
+    </div>
+    <div class="stats">
+        <div><strong>Balance</strong><br><span id="balance">1000.00</span> USD</div>
+        <div><strong>Auto-Trade</strong><br><span id="status">OFF</span></div>
+        <div><strong>Trades</strong><br><span id="tradeCount">0</span></div>
+    </div>
+    <h3>📋 Trade History</h3>
+    <div class="trade-list" id="tradeList">
+        No trades yet.
+    </div>
+</div>
+<script>
+    let baseUrl = '';
 
-  <script>
-    async function getSignal() {
-      try {
-        // প্রথমে /latest থেকে লেটেস্ট 10 ক্যান্ডেল নিই
-        let latestResp = await fetch('/latest');
-        if (!latestResp.ok) throw new Error('No data yet');
-        let candles = await latestResp.json();
-
-        // তারপর /predict এ পোস্ট করি
-        let predictResp = await fetch('/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ candles: candles })
-        });
-        let pred = await predictResp.json();
-
-        let actionEl = document.getElementById('action');
-        let confEl = document.getElementById('confidence');
-        document.getElementById('result').style.display = 'block';
-
-        if (pred.action === 'CALL') {
-          actionEl.style.color = '#00e676';
-          actionEl.textContent = 'CALL';
-        } else if (pred.action === 'PUT') {
-          actionEl.style.color = '#ff1744';
-          actionEl.textContent = 'PUT';
-        } else {
-          actionEl.style.color = '#cccccc';
-          actionEl.textContent = 'WAIT';
+    async function fetchSignal() {
+        try {
+            let resp = await fetch('/signal');
+            if (!resp.ok) throw new Error('No signal');
+            let data = await resp.json();
+            document.getElementById('action').textContent = data.action;
+            document.getElementById('action').style.color = data.action === 'CALL' ? '#3fb950' : '#f85149';
+            document.getElementById('confidence').textContent = `Confidence: ${data.confidence}%`;
+        } catch(e) {
+            document.getElementById('action').textContent = '⏳';
         }
-        confEl.textContent = `Confidence: ${pred.confidence}%`;
-      } catch (err) {
-        document.getElementById('result').style.display = 'block';
-        document.getElementById('action').textContent = '🔄';
-        document.getElementById('confidence').textContent = 'Loading data...';
-      }
     }
 
-    // প্রতি 30 সেকেন্ডে অটো-রিফ্রেশ
+    async function fetchStatus() {
+        let resp = await fetch('/trade/status');
+        let data = await resp.json();
+        document.getElementById('balance').textContent = data.balance.toFixed(2);
+        document.getElementById('status').textContent = data.auto_trade ? 'ON' : 'OFF';
+        document.getElementById('tradeCount').textContent = data.trade_count;
+        // history
+        let histResp = await fetch('/trade/history');
+        let trades = await histResp.json();
+        let html = '';
+        trades.reverse().forEach(t => {
+            html += `<div class="trade-item">
+                <span>${t.time}</span>
+                <span style="color:${t.win?'#3fb950':'#f85149'}">${t.signal}</span>
+                <span class="${t.win?'win':'loss'}">${t.profit} USD</span>
+                <span>Bal: ${t.balance}</span>
+            </div>`;
+        });
+        document.getElementById('tradeList').innerHTML = html || 'No trades yet.';
+    }
+
+    async function startAuto() {
+        await fetch('/trade/start', {method:'POST'});
+        fetchStatus();
+    }
+    async function stopAuto() {
+        await fetch('/trade/stop', {method:'POST'});
+        fetchStatus();
+    }
+    function refreshSignal() { fetchSignal(); }
+
+    // অটো রিফ্রেশ প্রতি 30 সেকেন্ডে
     window.onload = () => {
-      getSignal();
-      setInterval(getSignal, 30000);
+        fetchSignal();
+        fetchStatus();
+        setInterval(() => {
+            fetchSignal();
+            fetchStatus();
+        }, 30000);
     };
-  </script>
+</script>
 </body>
 </html>

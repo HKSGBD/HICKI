@@ -3,106 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Trader Agent | Quotex</title>
+    <title>Master Signal - Quotex Real</title>
     <style>
-        body { margin:0; background:#0d1117; color:#c9d1d9; font-family:Segoe UI,sans-serif; }
-        .container { max-width:700px; margin:auto; padding:20px; }
-        .header { text-align:center; margin-bottom:20px; }
-        .header h1 { color:#58a6ff; }
-        .signal-box { background:#161b22; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px; }
-        #action { font-size:3rem; font-weight:bold; margin:10px 0; }
-        .controls { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
-        button { padding:10px 25px; border:none; border-radius:8px; font-size:1rem; cursor:pointer; }
-        .btn-start { background:#238636; color:white; }
-        .btn-stop { background:#da3633; color:white; }
-        .btn-refresh { background:#30363d; color:#c9d1d9; }
-        .stats { display:flex; justify-content:space-around; background:#161b22; border-radius:10px; padding:15px; margin-bottom:20px; }
-        .trade-list { background:#161b22; border-radius:10px; padding:10px; max-height:300px; overflow-y:auto; }
-        .trade-item { display:flex; justify-content:space-between; border-bottom:1px solid #30363d; padding:5px 0; }
-        .win { color:#3fb950; } .loss { color:#f85149; }
+        body { margin:0; background:#0d1117; color:#c9d1d9; font-family:Segoe UI,sans-serif; display:flex; justify-content:center; align-items:center; min-height:100vh; text-align:center; }
+        .container { max-width:500px; padding:20px; }
+        h1 { color:#58a6ff; margin-bottom:5px; }
+        .pair-box { background:#161b22; border-radius:10px; padding:10px; margin:10px 0; }
+        .signal-box { background:#161b22; border-radius:15px; padding:30px 20px; margin:20px 0; }
+        #action { font-size:3.5rem; font-weight:bold; margin:10px 0; }
+        #confidence { opacity:0.8; font-size:1.2rem; }
+        .meta { opacity:0.7; font-size:0.9rem; margin:5px 0; }
+        .refresh-btn { background:#30363d; color:white; border:none; padding:12px 30px; border-radius:8px; font-size:1rem; cursor:pointer; }
+        .note { opacity:0.5; font-size:0.8rem; margin-top:20px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        <h1>🤖 Master Trader Agent</h1>
-        <p>SuperLogic v3 · 95% Backtest · Sandbox Simulation</p>
+    <h1>🎯 Master Signal</h1>
+    <div class="pair-box">
+        <strong>Currency Pair:</strong> EUR/USD OTC<br>
+        <strong>Timeframe:</strong> 30 Seconds
     </div>
     <div class="signal-box">
         <div>বর্তমান সংকেত</div>
         <div id="action" style="color:gray">⏳</div>
-        <div id="confidence" style="opacity:0.8"></div>
+        <div id="confidence"></div>
+        <div class="meta">Last updated: <span id="lastUpdate">--</span></div>
     </div>
-    <div class="controls">
-        <button class="btn-start" onclick="startAuto()">▶ Start Auto</button>
-        <button class="btn-stop" onclick="stopAuto()">⏹ Stop</button>
-        <button class="btn-refresh" onclick="refreshSignal()">🔄 Refresh</button>
-    </div>
-    <div class="stats">
-        <div><strong>Balance</strong><br><span id="balance">1000.00</span> USD</div>
-        <div><strong>Auto-Trade</strong><br><span id="status">OFF</span></div>
-        <div><strong>Trades</strong><br><span id="tradeCount">0</span></div>
-    </div>
-    <h3>📋 Trade History</h3>
-    <div class="trade-list" id="tradeList">
-        No trades yet.
-    </div>
+    <button class="refresh-btn" onclick="fetchSignal()">🔄 Refresh Now</button>
+    <p class="note">Auto-refresh every 30s. Trade based on this signal.</p>
 </div>
 <script>
-    let baseUrl = '';
-
     async function fetchSignal() {
         try {
             let resp = await fetch('/signal');
-            if (!resp.ok) throw new Error('No signal');
+            if (!resp.ok) throw new Error('No data');
             let data = await resp.json();
-            document.getElementById('action').textContent = data.action;
-            document.getElementById('action').style.color = data.action === 'CALL' ? '#3fb950' : '#f85149';
+            let actionEl = document.getElementById('action');
+            actionEl.textContent = data.action;
+            actionEl.style.color = data.action === 'CALL' ? '#3fb950' : '#f85149';
             document.getElementById('confidence').textContent = `Confidence: ${data.confidence}%`;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
         } catch(e) {
             document.getElementById('action').textContent = '⏳';
         }
     }
 
-    async function fetchStatus() {
-        let resp = await fetch('/trade/status');
-        let data = await resp.json();
-        document.getElementById('balance').textContent = data.balance.toFixed(2);
-        document.getElementById('status').textContent = data.auto_trade ? 'ON' : 'OFF';
-        document.getElementById('tradeCount').textContent = data.trade_count;
-        // history
-        let histResp = await fetch('/trade/history');
-        let trades = await histResp.json();
-        let html = '';
-        trades.reverse().forEach(t => {
-            html += `<div class="trade-item">
-                <span>${t.time}</span>
-                <span style="color:${t.win?'#3fb950':'#f85149'}">${t.signal}</span>
-                <span class="${t.win?'win':'loss'}">${t.profit} USD</span>
-                <span>Bal: ${t.balance}</span>
-            </div>`;
-        });
-        document.getElementById('tradeList').innerHTML = html || 'No trades yet.';
-    }
-
-    async function startAuto() {
-        await fetch('/trade/start', {method:'POST'});
-        fetchStatus();
-    }
-    async function stopAuto() {
-        await fetch('/trade/stop', {method:'POST'});
-        fetchStatus();
-    }
-    function refreshSignal() { fetchSignal(); }
-
-    // অটো রিফ্রেশ প্রতি 30 সেকেন্ডে
     window.onload = () => {
         fetchSignal();
-        fetchStatus();
-        setInterval(() => {
-            fetchSignal();
-            fetchStatus();
-        }, 30000);
+        setInterval(fetchSignal, 30000);
     };
 </script>
 </body>

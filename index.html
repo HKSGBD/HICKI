@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q-Master AI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>🤖 Q-Master AI</h1>
+      <div class="pair-selector">
+        <label>OTC Pair:</label>
+        <select id="pair-select">
+          <option>EUR/USD OTC</option>
+          <option>GBP/USD OTC</option>
+          <option>USD/JPY OTC</option>
+          <option>EUR/GBP OTC</option>
+        </select>
+        <button onclick="changePair()">Change</button>
+      </div>
+    </header>
+    <main>
+      <div class="signal-card">
+        <div class="signal-header">বর্তমান সিগন্যাল</div>
+        <div id="action" class="signal-action">⏳</div>
+        <div id="confidence"></div>
+        <div id="reason" class="reason"></div>
+        <div id="last-update"></div>
+      </div>
+      <div class="chart-area">
+        <canvas id="priceChart" width="800" height="400"></canvas>
+      </div>
+      <div class="learning-panel">
+        <button id="btn-win" onclick="learn(1)">✅ Win (CALL)</button>
+        <button id="btn-loss" onclick="learn(0)">❌ Loss (PUT)</button>
+        <span id="learn-status"></span>
+      </div>
+    </main>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

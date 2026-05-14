@@ -1,0 +1,17 @@
+{
+  "name": "q-master-ai",
+  "version": "1.0.0",
+  "description": "Quotex AI Signal App with Self-Learning",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^28.0.0",
+    "puppeteer-core": "^21.0.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  }
+}

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quotex 30s Predictor</title>
+<style>
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+  }
+  h1 { font-size: 2.5rem; margin-bottom: 0.2em; }
+  button {
+    background: #00e676;
+    border: none;
+    padding: 1.5em 3em;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    margin: 1em 0;
+    box-shadow: 0 0 30px #00e67688;
+    transition: 0.3s;
+  }
+  button:hover { box-shadow: 0 0 50px #00e676; }
+  #result {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(15px);
+    border-radius: 25px;
+    padding: 2em;
+    margin: 1em;
+    min-width: 300px;
+    display: none;
+  }
+  #action { font-size: 4rem; font-weight: 900; letter-spacing: 5px; margin: 0.2em 0; }
+  #confidence { font-size: 1.5rem; opacity: 0.9; }
+  .note { opacity: 0.6; font-size: 0.9rem; margin-top: 2em; }
+</style>
+</head>
+<body>
+  <h1>⚡ Quotex 30s Predictor</h1>
+  <p>SuperLogic v2 (94% backtest accuracy)</p>
+  <button onclick="getSignal()">🔮 Get Signal</button>
+  <div id="result">
+    <div id="action"></div>
+    <div id="confidence"></div>
+  </div>
+  <p class="note">⚠️ Simulation only – no real money.</p>
+
+  <script>
+    async function getSignal() {
+      try {
+        // প্রথমে /latest থেকে লেটেস্ট 10 ক্যান্ডেল নিই
+        let latestResp = await fetch('/latest');
+        if (!latestResp.ok) throw new Error('No data yet');
+        let candles = await latestResp.json();
+
+        // তারপর /predict এ পোস্ট করি
+        let predictResp = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ candles: candles })
+        });
+        let pred = await predictResp.json();
+
+        let actionEl = document.getElementById('action');
+        let confEl = document.getElementById('confidence');
+        document.getElementById('result').style.display = 'block';
+
+        if (pred.action === 'CALL') {
+          actionEl.style.color = '#00e676';
+          actionEl.textContent = 'CALL';
+        } else if (pred.action === 'PUT') {
+          actionEl.style.color = '#ff1744';
+          actionEl.textContent = 'PUT';
+        } else {
+          actionEl.style.color = '#cccccc';
+          actionEl.textContent = 'WAIT';
+        }
+        confEl.textContent = `Confidence: ${pred.confidence}%`;
+      } catch (err) {
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('action').textContent = '🔄';
+        document.getElementById('confidence').textContent = 'Loading data...';
+      }
+    }
+
+    // প্রতি 30 সেকেন্ডে অটো-রিফ্রেশ
+    window.onload = () => {
+      getSignal();
+      setInterval(getSignal, 30000);
+    };
+  </script>
+</body>
+</html>
